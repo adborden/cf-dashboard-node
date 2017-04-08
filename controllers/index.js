@@ -1,5 +1,4 @@
 
-import fs from 'fs';
 import path from 'path';
 
 import axios from 'axios';
@@ -11,7 +10,7 @@ import apiProxy from '../api_proxy';
 
 export const auth = {
   init(app) {
-    const authRouter = express.Router();
+    const authRouter = new express.Router();
 
     // Mount the route handlers
     authRouter.get('/login', auth.login);
@@ -26,13 +25,13 @@ export const auth = {
     });
 
     passport.use(new oauth2.Strategy({
-      authorizationURL: `${process.env.LOGIN_URL}oauth2/authorize`,
-      tokenURL: `${process.env.LOGIN_URL}oauth2/token`,
-      clientID: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
+      authorizationURL: `${process.env.CONSOLE_LOGIN_URL}/oauth/authorize`,
+      tokenURL: `${process.env.CONSOLE_LOGIN_URL}/oauth/token`,
+      clientID: process.env.CONSOLE_CLIENT_ID,
+      clientSecret: process.env.CONSOLE_CLIENT_SECRET,
       callbackURL: `${process.env.APP_URL}/auth/callback`
     },
-    function(accessToken, refreshToken, profile, cb) {
+    function (accessToken, refreshToken, profile, cb) {
       // There's no user to lookup, so we just return the data as a simple
       // user modlel.
       cb(null, {
@@ -59,7 +58,7 @@ export function home(req, res) {
 
 export const api = {
   init() {
-    const apiRouter = express.Router();
+    const apiRouter = new express.Router();
     const apiClient = axios.create({
       baseUrl: process.env.CF_API_URL
     });
