@@ -1,36 +1,49 @@
 /* eslint no-param-reassign: ["error", { "props": false }] */
 
 import stream from 'stream';
+
+import axios from 'axios';
 import refresh from 'passport-oauth2-refresh';
 
-function forwardResponse(response, res) {
-  // Set upstream headers
-  ['content-type', 'content-length'].forEach(header => {
-    if (header in response.headers) {
-      res.append(header, response.headers[header]);
-    }
-  });
+export class ApiProxy {
+  constructor(options) {
+    const { baseURL, client } = options || {};
+    this.client = client || axios.create({
+      baseURL
+    });
+  }
 
-  // Include upstream status and data
-  res.status(response.status).send(response.data);
-}
+  _forwardResponse(response, res) {
+    // Set upstream headers
+    ['content-type', 'content-length'].forEach(header => {
+      if (header in response.headers) {
+        res.append(header, response.headers[header]);
+      }
+    });
 
-function apiProxyHandler(client) {
-  function apiProxy(req, res) {
+    // Include upstream status and data
+    res.status(response.status).send(response.data);
+  }
+
+  _url(req) {
+    // Include the mount point in the URL. This is unrelated to baseURL passed
+    // into the constructor
+    return `${req.baseUrl}${req.path}`;
+  }
+
+  proxy(req, res) {
     const {
-      baseUrl,
       body,
       method,
       query,
-      path,
       user
     } = req;
 
     let data = undefined;
-    if (['put', 'post', 'patch'].includes(method)) {
+    if (['put', 'post', 'patch'].includes(method.toLowerCase())) {
       data = new stream.PassThrough();
       data.on('error', (err) => {
-        console.error('Error writing to api client request', err);
+        console.error('Error writing to api proxied request', err);
       });
 
       // Pipe request body to the client
@@ -38,11 +51,11 @@ function apiProxyHandler(client) {
     }
 
     // TODO client could send both v2 and v3, both are supported by the upstream API
-    client.request({
+    return this.client.request({
       body,
       method,
       params: query,
-      url: `${baseUrl}${path}`,
+      url: this._url(req),
       data,
       headers: {
         Authorization: `Bearer ${user.accessToken}`
@@ -61,12 +74,6 @@ function apiProxyHandler(client) {
       console.log('401 from upstream API, refreshing token.');
 
       return new Promise((resolve, reject) => {
-        reject(new Error('foooooo'));
-        if (!req) {
-          console.error('derp');
-          reject(new Error('No request?'));
-        }
-
         refresh.requestNewAccessToken(
           'oauth2',
           req.user.refreshToken,
@@ -90,8 +97,17 @@ function apiProxyHandler(client) {
             req.session.passport = { user: req.user };
 
             // Re-try the request once
-            client
-              .request(response.config)
+            const config = Object.assign(
+              {},
+              response.config,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`
+                }
+              }
+            );
+            this.client
+              .request(config)
               .then(resolve, reject);
           }
         );
@@ -102,12 +118,11 @@ function apiProxyHandler(client) {
         method: response.config.method,
         url: response.config.url,
         status: response.status,
-        req_size: (response.body || '').length,
-        length: response.headers['content-length'],
-        req_headers: response.config.headers
+        req_size: (response.config.body || '').length,
+        length: response.headers['content-length']
       });
 
-      forwardResponse(response, res);
+      this._forwardResponse(response, res);
     })
     .catch(err => {
       const response = err.response || {};
@@ -119,7 +134,7 @@ function apiProxyHandler(client) {
       });
 
       if (response.status) {
-        forwardResponse(response, res);
+        this._forwardResponse(response, res);
         return;
       }
 
@@ -127,6 +142,12 @@ function apiProxyHandler(client) {
         description: `Error connecting to API: ${err.message}`
       });
     });
+  }
+}
+
+function apiProxyHandler(client) {
+  function apiProxy(req, res) {
+    client.proxy(req, res);
   }
 
   return apiProxy;

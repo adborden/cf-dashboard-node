@@ -5,6 +5,7 @@ import passport from 'passport';
 
 import cookieSession from 'cookie-session';
 import { auth, home, api } from './controllers';
+import uaaProxy from './uaa_proxy';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -42,8 +43,9 @@ app.use(auth.requireLogin);
 //app.use('/auth', auth.init(app));
 //app.use('/api', api.init(app));
 // Upstream API returns paged responses with next_url as if it was the full url so we need to mount to /v*
-app.use('/v2', api.init(app)); // TODO upstream API 
-app.use('/v3', api.init(app)); // TODO upstream API 
+app.use('/v2', api.init(app));
+app.use('/v3', api.init(app));
+app.use('/uaa', uaaProxy());
 
 const server = app.listen(port, 'localhost', () => {
   const address = server.address();

@@ -9,7 +9,7 @@ import passport from 'passport';
 import oauth2 from 'passport-oauth2';
 import refresh from 'passport-oauth2-refresh';
 
-import apiProxy from '../api_proxy';
+import apiProxyHandler, { ApiProxy } from '../api_proxy';
 
 export const auth = {
   init(app) {
@@ -63,12 +63,6 @@ export const auth = {
     // Initialize passport for OAuth
     app.use(passport.initialize());
     app.use(passport.session());
-    //app.use(passport.authenticate('oauth2'));
-    app.use((req, res, next) => {
-      const passport = req.session && req.session.passport || {};
-      console.log({ session: passport.user });
-      next();
-    });
 
     return authRouter;
   },
@@ -100,18 +94,17 @@ export function home(req, res) {
 }
 
 export const api = {
-  init(app) {
+  init(app, options = {}) {
+    const baseURL = options.baseURL || process.env.CONSOLE_API_URL;
     const apiRouter = new express.Router();
-    const apiClient = axios.create({
-      baseURL: process.env.CONSOLE_API_URL
-    });
+    const httpClient = axios.create({ baseURL });
 
     // Disable caching
     // TODO come up with an API caching strategy
     app.set('etag', false);
 
     apiRouter.get('/authstatus', api.authStatus);
-    apiRouter.get('*', apiProxy(apiClient));
+    apiRouter.all('*', apiProxyHandler(new ApiProxy({ baseURL, client: httpClient })));
 
     return apiRouter;
   },
