@@ -163,9 +163,9 @@ export function checkAuth(...args) {
 
       // The user is Unauthenicated. We could redirect to a home page where
       // user could click login but since we don't have any such page, just
-      // start the login flow by redirecting to /auth/login. This is as if they
+      // start the login flow by redirecting to /handshake. This is as if they
       // had clicked login.
-      windowUtil.redirect('/auth/login');
+      windowUtil.redirect('/handshake');
 
       // Just in case something goes wrong, don't leave the user hanging. Show
       // a delayed loading indicator to give them a hint. Hopefully the
