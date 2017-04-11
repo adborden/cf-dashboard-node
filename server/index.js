@@ -4,8 +4,7 @@ import morgan from 'morgan';
 import passport from 'passport';
 
 import cookieSession from 'cookie-session';
-import { auth, home, api } from './controllers';
-import uaaProxy from './uaa_proxy';
+import { auth, home, api, uaaProxy } from './controllers';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -14,7 +13,7 @@ const port = process.env.PORT || 8080;
 app.use(morgan('combined')); // logging middleware
 
 // Static routes
-app.use('/assets', express.static(path.join(__dirname, 'static', 'assets')));
+app.use('/assets', express.static(path.join(path.dirname(__dirname), 'static', 'assets')));
 app.get('/favicon.ico', (req, res) => {
   res.status(404).send('Not found');
 });

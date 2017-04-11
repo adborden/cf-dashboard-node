@@ -1,11 +1,5 @@
 
-import { ApiProxy } from './api_proxy';
-
-class UaaProxyClient extends ApiProxy {
-  _url(req) {
-    return req.path;
-  }
-}
+import UaaProxyClient from '../proxy_client/uaa';
 
 function uaaProxy() {
   const client = new UaaProxyClient({ baseURL: process.env.CONSOLE_UAA_URL });

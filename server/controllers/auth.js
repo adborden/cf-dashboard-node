@@ -9,9 +9,8 @@ import passport from 'passport';
 import oauth2 from 'passport-oauth2';
 import refresh from 'passport-oauth2-refresh';
 
-import apiProxyHandler, { ApiProxy } from '../api_proxy';
 
-export const auth = {
+const auth = {
   init(app) {
     // Configure oauth2 strategy
     const strategy = new oauth2.Strategy({
@@ -59,7 +58,6 @@ export const auth = {
     authRouter.get('/logout', auth.logout);
     authRouter.get('/callback', auth.callback);
 
-
     // Initialize passport for OAuth
     app.use(passport.initialize());
     app.use(passport.session());
@@ -89,31 +87,4 @@ export const auth = {
   }
 };
 
-export function home(req, res) {
-  res.sendFile(path.join(path.dirname(__dirname), 'static', 'index.html'));
-}
-
-export const api = {
-  init(app, options = {}) {
-    const baseURL = options.baseURL || process.env.CONSOLE_API_URL;
-    const apiRouter = new express.Router();
-    const httpClient = axios.create({ baseURL });
-
-    // Disable caching
-    // TODO come up with an API caching strategy
-    app.set('etag', false);
-
-    apiRouter.get('/authstatus', api.authStatus);
-    apiRouter.all('*', apiProxyHandler(new ApiProxy({ baseURL, client: httpClient })));
-
-    return apiRouter;
-  },
-
-  authStatus(req, res) {
-    if (!req.user) {
-      return res.status(401).send({ status: 'unauthorized' });
-    }
-
-    return res.send({ status: 'authorized' });
-  }
-};
+export default auth;

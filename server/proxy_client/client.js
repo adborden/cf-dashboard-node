@@ -5,7 +5,7 @@ import stream from 'stream';
 import axios from 'axios';
 import refresh from 'passport-oauth2-refresh';
 
-export class ApiProxy {
+class ProxyClient {
   constructor(options) {
     const { baseURL, client } = options || {};
     this.client = client || axios.create({
@@ -145,12 +145,4 @@ export class ApiProxy {
   }
 }
 
-function apiProxyHandler(client) {
-  function apiProxy(req, res) {
-    client.proxy(req, res);
-  }
-
-  return apiProxy;
-}
-
-export default apiProxyHandler;
+export default ProxyClient;
