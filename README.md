@@ -5,7 +5,10 @@ around running the dashboard with Nodejs.
 
 ## Trying it out
 
+Don't forget to source your env file.
+
     $ npm install
+    $ npm run build
     $ npm start
 
 
